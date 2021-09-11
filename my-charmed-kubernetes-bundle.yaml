@@ -1,0 +1,121 @@
+series: focal
+applications:
+  calico:
+    charm: cs:~containers/calico-759
+    annotations:
+      gui-x: "480"
+      gui-y: "750"
+  containerd:
+    charm: cs:~containers/containerd-102
+    annotations:
+      gui-x: "475"
+      gui-y: "800"
+  easyrsa:
+    charm: cs:~containers/easyrsa-345
+    num_units: 1
+    to:
+    - "0"
+    annotations:
+      gui-x: "90"
+      gui-y: "420"
+  etcd:
+    charm: cs:~containers/etcd-553
+    num_units: 3
+    to:
+    - "0"
+    - "1"
+    - "2"
+    options:
+      channel: 3.4/stable
+    annotations:
+      gui-x: "800"
+      gui-y: "420"
+  kubeapi-load-balancer:
+    charm: cs:~containers/kubeapi-load-balancer-757
+    num_units: 3
+    to:
+    - "0"
+    - "1"
+    - "2"
+    expose: true
+    annotations:
+      gui-x: "450"
+      gui-y: "250"
+  kubernetes-master:
+    charm: cs:~containers/kubernetes-master-955
+    num_units: 3
+    to:
+    - "0"
+    - "1"
+    - "2"
+    options:
+      channel: 1.20/stable
+    annotations:
+      gui-x: "800"
+      gui-y: "850"
+  kubernetes-worker:
+    charm: cs:~containers/kubernetes-worker-726
+    num_units: 3
+    to:
+    - "3"
+    - "4"
+    - "5"
+    expose: true
+    options:
+      channel: 1.20/stable
+    annotations:
+      gui-x: "90"
+      gui-y: "850"
+  vsphere-integrator:
+    charm: cs:~containers/vsphere-integrator-52
+    num_units: 1
+    to:
+    - "0"
+    options:
+      credentials: |-
+        ewogICJ2c3BoZXJlX2lwIjogIjE5Mi4xNjguMC4zMCIsCiAgInVzZXIiOiAiYWRtaW5pc3RyYXRv
+        ckB2c3BoZXJlLmxvY2FsIiwKICAicGFzc3dvcmQiOiAiUEBzc3cwcmQhIiwKICAiZGF0YWNlbnRl
+        ciI6ICJJbmZyYS1EYXRhY2VudGVyMDEiCn0K
+      datastore: vsanDatastore
+      folder: /Infra-Datacenter01/vm/koiket/cnap/charmed
+    trust: true
+machines:
+  "0": {}
+  "1": {}
+  "2": {}
+  "3": {}
+  "4": {}
+  "5": {}
+relations:
+- - kubernetes-master:kube-api-endpoint
+  - kubeapi-load-balancer:apiserver
+- - kubernetes-master:loadbalancer
+  - kubeapi-load-balancer:loadbalancer
+- - kubernetes-master:kube-control
+  - kubernetes-worker:kube-control
+- - kubernetes-master:certificates
+  - easyrsa:client
+- - etcd:certificates
+  - easyrsa:client
+- - kubernetes-master:etcd
+  - etcd:db
+- - kubernetes-worker:certificates
+  - easyrsa:client
+- - kubernetes-worker:kube-api-endpoint
+  - kubeapi-load-balancer:website
+- - kubeapi-load-balancer:certificates
+  - easyrsa:client
+- - containerd:containerd
+  - kubernetes-worker:container-runtime
+- - containerd:containerd
+  - kubernetes-master:container-runtime
+- - calico:etcd
+  - etcd:db
+- - calico:cni
+  - kubernetes-master:cni
+- - calico:cni
+  - kubernetes-worker:cni
+- - vsphere-integrator:clients
+  - kubernetes-master:vsphere
+- - vsphere-integrator:clients
+  - kubernetes-worker:vsphere
